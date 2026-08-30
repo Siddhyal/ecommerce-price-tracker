@@ -1,24 +1,23 @@
-import sqlite3
 import re
 
 import pandas as pd
 import streamlit as st
 
 from scraper import scrape_product
+
 from database import (
+    DATABASE_NAME,
     create_database,
     save_product,
     save_price,
     get_products,
     get_latest_price
 )
+
 from alerts import (
     check_price_drop,
     calculate_savings
 )
-
-
-DATABASE_NAME = "data/products.db"
 
 
 # ==========================================
@@ -45,27 +44,36 @@ def extract_price(price_text):
 
 
 def get_all_price_history():
-    connection = sqlite3.connect(DATABASE_NAME)
+    """Load all product price history."""
 
-    query = """
-        SELECT
-            products.name AS product,
-            price_history.price AS price,
-            price_history.recorded_at AS recorded_at
-        FROM price_history
-        JOIN products
-        ON price_history.product_id = products.id
-        ORDER BY price_history.recorded_at ASC
-    """
+    connection = None
 
-    dataframe = pd.read_sql_query(
-        query,
-        connection
-    )
+    try:
+        connection = __import__("sqlite3").connect(
+            str(DATABASE_NAME)
+        )
 
-    connection.close()
+        query = """
+            SELECT
+                products.name AS product,
+                price_history.price AS price,
+                price_history.recorded_at AS recorded_at
+            FROM price_history
+            JOIN products
+            ON price_history.product_id = products.id
+            ORDER BY price_history.recorded_at ASC
+        """
 
-    return dataframe
+        dataframe = pd.read_sql_query(
+            query,
+            connection
+        )
+
+        return dataframe
+
+    finally:
+        if connection:
+            connection.close()
 
 
 def check_all_products():
@@ -211,16 +219,24 @@ if st.sidebar.button(
                         target_price
                     )
 
-                    save_price(
-                        product_id,
-                        price
-                    )
+                    if product_id is not None:
 
-                    st.sidebar.success(
-                        "Product tracked successfully!"
-                    )
+                        save_price(
+                            product_id,
+                            price
+                        )
 
-                    st.rerun()
+                        st.sidebar.success(
+                            "Product tracked successfully!"
+                        )
+
+                        st.rerun()
+
+                    else:
+
+                        st.sidebar.error(
+                            "Could not save product."
+                        )
 
             except Exception as error:
 
@@ -360,6 +376,13 @@ with check_col2:
                     st.write(
                         f"**{result['name']}** — "
                         f"£{result['price']:.2f}"
+                    )
+
+                elif "error" in result:
+
+                    st.error(
+                        f"{result['name']}: "
+                        f"{result['error']}"
                     )
 
         st.rerun()
@@ -558,5 +581,6 @@ st.divider()
 
 st.caption(
     "E-Commerce Price Tracker • "
-    "Python • Streamlit • SQLite • Web Scraping • Email Alerts"
+    "Python • Streamlit • SQLite • "
+    "Web Scraping • Email Alerts"
 )
