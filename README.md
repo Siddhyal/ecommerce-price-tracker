@@ -4,8 +4,7 @@ A Python-based web application that automatically tracks e-commerce product pric
 
 ## 📸 Dashboard Preview
 
-![E-Commerce Price Tracker Dashboard](Screenshot 2026-08-31 012903.png")
----
+![E-Commerce Price Tracker Dashboard]
 
 ## 📌 Overview
 
